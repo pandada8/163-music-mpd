@@ -1,46 +1,32 @@
 from urwid import *
 
-class CustomListWalker(ListWalker):
-    def __init__(self, data):
-        self.data = data
-        self.focus = 0
+class CustomListWalker(SimpleFocusListWalker):
 
     def __getitem__(self, position):
-        if position < 15:
-            return Text(str(position))
+        content = super(CustomListWalker, self).__getitem__(position)
+        if self.focus != position:
+            return AttrMap(Text(str(content)), "text", 'text_focus')
         else:
-            raise KeyError
-    def next_position(self, position):
-        return position + 1
-
-    def prev_position(self, position):
-        if position >= 0:
-            return position - 1
-        else:
-            raise IndexError
-
-    def set_focus(self, position):
-        if 0 <= position < 15:
-            self.focus = positon
-        self._modified()
+            return AttrMap(Text("> "+str(content)), "text", 'text_focus')
 
 
 class Application():
 
     palette = [
         ('status', '', '', '', "g42", ''),
-        ('text', 'white', '', '', '', '')
+        ('text', 'light gray', '', '', '', ''),
+        ('text_focus', "white, bold", 'black', )
     ]
 
     def __init__(self):
         self.status = Text('♫  ♪ ♫  ♪  Play ksdjflkasjd;flja;sl')
         # TODO using attrmap subclass to change color
         # TODO control this by cli config
-        self.current_list = CustomListWalker([1, 2,3,4,5,6])
-        self.layout = Frame(AttrMap(ListBox(self.current_list), 'text'), footer=AttrMap(self.status, 'status'))
+        self.current_list = CustomListWalker(["Song", "Song2", "Song3"])
+        self.layout = Frame(AttrMap(ListBox(self.current_list), 'text'), footer=AttrMap(self.status, 'status'), )
         self.screen = raw_display.Screen()
         self.screen.set_terminal_properties(256)
-        self.event_loop = MainLoop(self.layout, self.palette, screen=self.screen, unhandled_input=self.unhandled_input)
+        self.event_loop = MainLoop(ListBox(self.current_list), self.palette, screen=self.screen, unhandled_input=self.unhandled_input)
 
     def run(self):
         self.event_loop.run()
@@ -48,6 +34,12 @@ class Application():
     def unhandled_input(self, key):
         if key in ('Q', 'q'):
             self.quit()
+        if key in ('down', 'j'):
+            self._next_item()
+
+    def _next_item(self):
+        # self.current_list.positions
+        self.current_list.set_focus()
 
     def quit(self):
         # do some stuff
